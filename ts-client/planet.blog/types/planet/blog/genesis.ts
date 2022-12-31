@@ -3,6 +3,7 @@ import Long from "long";
 import _m0 from "protobufjs/minimal";
 import { Params } from "./params";
 import { Post } from "./post";
+import { SentPost } from "./sent_post";
 
 export const protobufPackage = "planet.blog";
 
@@ -11,12 +12,14 @@ export interface GenesisState {
   params: Params | undefined;
   portId: string;
   postList: Post[];
-  /** this line is used by starport scaffolding # genesis/proto/state */
   postCount: number;
+  sentPostList: SentPost[];
+  /** this line is used by starport scaffolding # genesis/proto/state */
+  sentPostCount: number;
 }
 
 function createBaseGenesisState(): GenesisState {
-  return { params: undefined, portId: "", postList: [], postCount: 0 };
+  return { params: undefined, portId: "", postList: [], postCount: 0, sentPostList: [], sentPostCount: 0 };
 }
 
 export const GenesisState = {
@@ -32,6 +35,12 @@ export const GenesisState = {
     }
     if (message.postCount !== 0) {
       writer.uint32(32).uint64(message.postCount);
+    }
+    for (const v of message.sentPostList) {
+      SentPost.encode(v!, writer.uint32(42).fork()).ldelim();
+    }
+    if (message.sentPostCount !== 0) {
+      writer.uint32(48).uint64(message.sentPostCount);
     }
     return writer;
   },
@@ -55,6 +64,12 @@ export const GenesisState = {
         case 4:
           message.postCount = longToNumber(reader.uint64() as Long);
           break;
+        case 5:
+          message.sentPostList.push(SentPost.decode(reader, reader.uint32()));
+          break;
+        case 6:
+          message.sentPostCount = longToNumber(reader.uint64() as Long);
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -69,6 +84,10 @@ export const GenesisState = {
       portId: isSet(object.portId) ? String(object.portId) : "",
       postList: Array.isArray(object?.postList) ? object.postList.map((e: any) => Post.fromJSON(e)) : [],
       postCount: isSet(object.postCount) ? Number(object.postCount) : 0,
+      sentPostList: Array.isArray(object?.sentPostList)
+        ? object.sentPostList.map((e: any) => SentPost.fromJSON(e))
+        : [],
+      sentPostCount: isSet(object.sentPostCount) ? Number(object.sentPostCount) : 0,
     };
   },
 
@@ -82,6 +101,12 @@ export const GenesisState = {
       obj.postList = [];
     }
     message.postCount !== undefined && (obj.postCount = Math.round(message.postCount));
+    if (message.sentPostList) {
+      obj.sentPostList = message.sentPostList.map((e) => e ? SentPost.toJSON(e) : undefined);
+    } else {
+      obj.sentPostList = [];
+    }
+    message.sentPostCount !== undefined && (obj.sentPostCount = Math.round(message.sentPostCount));
     return obj;
   },
 
@@ -93,6 +118,8 @@ export const GenesisState = {
     message.portId = object.portId ?? "";
     message.postList = object.postList?.map((e) => Post.fromPartial(e)) || [];
     message.postCount = object.postCount ?? 0;
+    message.sentPostList = object.sentPostList?.map((e) => SentPost.fromPartial(e)) || [];
+    message.sentPostCount = object.sentPostCount ?? 0;
     return message;
   },
 };
