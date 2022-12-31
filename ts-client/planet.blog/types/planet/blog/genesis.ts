@@ -4,6 +4,7 @@ import _m0 from "protobufjs/minimal";
 import { Params } from "./params";
 import { Post } from "./post";
 import { SentPost } from "./sent_post";
+import { TimedoutPost } from "./timedout_post";
 
 export const protobufPackage = "planet.blog";
 
@@ -14,12 +15,23 @@ export interface GenesisState {
   postList: Post[];
   postCount: number;
   sentPostList: SentPost[];
-  /** this line is used by starport scaffolding # genesis/proto/state */
   sentPostCount: number;
+  timedoutPostList: TimedoutPost[];
+  /** this line is used by starport scaffolding # genesis/proto/state */
+  timedoutPostCount: number;
 }
 
 function createBaseGenesisState(): GenesisState {
-  return { params: undefined, portId: "", postList: [], postCount: 0, sentPostList: [], sentPostCount: 0 };
+  return {
+    params: undefined,
+    portId: "",
+    postList: [],
+    postCount: 0,
+    sentPostList: [],
+    sentPostCount: 0,
+    timedoutPostList: [],
+    timedoutPostCount: 0,
+  };
 }
 
 export const GenesisState = {
@@ -41,6 +53,12 @@ export const GenesisState = {
     }
     if (message.sentPostCount !== 0) {
       writer.uint32(48).uint64(message.sentPostCount);
+    }
+    for (const v of message.timedoutPostList) {
+      TimedoutPost.encode(v!, writer.uint32(58).fork()).ldelim();
+    }
+    if (message.timedoutPostCount !== 0) {
+      writer.uint32(64).uint64(message.timedoutPostCount);
     }
     return writer;
   },
@@ -70,6 +88,12 @@ export const GenesisState = {
         case 6:
           message.sentPostCount = longToNumber(reader.uint64() as Long);
           break;
+        case 7:
+          message.timedoutPostList.push(TimedoutPost.decode(reader, reader.uint32()));
+          break;
+        case 8:
+          message.timedoutPostCount = longToNumber(reader.uint64() as Long);
+          break;
         default:
           reader.skipType(tag & 7);
           break;
@@ -88,6 +112,10 @@ export const GenesisState = {
         ? object.sentPostList.map((e: any) => SentPost.fromJSON(e))
         : [],
       sentPostCount: isSet(object.sentPostCount) ? Number(object.sentPostCount) : 0,
+      timedoutPostList: Array.isArray(object?.timedoutPostList)
+        ? object.timedoutPostList.map((e: any) => TimedoutPost.fromJSON(e))
+        : [],
+      timedoutPostCount: isSet(object.timedoutPostCount) ? Number(object.timedoutPostCount) : 0,
     };
   },
 
@@ -107,6 +135,12 @@ export const GenesisState = {
       obj.sentPostList = [];
     }
     message.sentPostCount !== undefined && (obj.sentPostCount = Math.round(message.sentPostCount));
+    if (message.timedoutPostList) {
+      obj.timedoutPostList = message.timedoutPostList.map((e) => e ? TimedoutPost.toJSON(e) : undefined);
+    } else {
+      obj.timedoutPostList = [];
+    }
+    message.timedoutPostCount !== undefined && (obj.timedoutPostCount = Math.round(message.timedoutPostCount));
     return obj;
   },
 
@@ -120,6 +154,8 @@ export const GenesisState = {
     message.postCount = object.postCount ?? 0;
     message.sentPostList = object.sentPostList?.map((e) => SentPost.fromPartial(e)) || [];
     message.sentPostCount = object.sentPostCount ?? 0;
+    message.timedoutPostList = object.timedoutPostList?.map((e) => TimedoutPost.fromPartial(e)) || [];
+    message.timedoutPostCount = object.timedoutPostCount ?? 0;
     return message;
   },
 };
