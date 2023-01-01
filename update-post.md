@@ -9,7 +9,7 @@ ignite scaffold packet ibcUpdatePost postID title content --ack ok --module blog
 
 #### 2. Add `Editor` field to `IbcUpdatePostPacketData`
 
-In `proto/blog/packet.proto` file, add `editor` field to `IbcUpdatePostPacketData`, rebuild the project. 
+To ensure only the author could update the post, in `proto/blog/packet.proto` file, add `editor` field to `IbcUpdatePostPacketData`, and rebuild the project. 
 
 ```bash
 ignite chain build
@@ -135,7 +135,14 @@ message TimedoutPost {
 }
 ```
 
-#### 6. Launch two chains
+#### 6. Build `planetd`
+
+```bash
+cd cmd/planetd
+go build
+```
+
+#### 7. Launch two chains
 
 ```bash
 ignite chain serve -c earth.yml
@@ -143,7 +150,7 @@ ignite chain serve -c earth.yml
 ignite chain serve -c mars.yml
 ```
 
-#### 7. Start relayer
+#### 8. Start relayer
 
 ```bash
 rm -rf ~/.ignite/relayer
@@ -167,13 +174,45 @@ ignite relayer configure -a \
 ignite relayer connect
 ```
 
-#### 8. Update Post from Earth
+You will see the channel ID (e.g. `channel-0`) in the output which will be used in the next step.
 
 ```bash
-planetd tx blog send-ibc-update-post blog channel-0 0 "Hello" "Hello Mars, I'm Alice from Earth" --from alice --chain-id earth --home ~/.earth
+------
+Paths
+------
+
+earth-mars:
+    earth > (port: blog) (channel: channel-0)
+    mars  > (port: blog) (channel: channel-0)
+
+------
+Listening and relaying packets between chains...
+------
 ```
 
-#### 9. Verify result via RPC query
+#### 9. Create and Update Post via IBC
+
+Create one post with title and content
+
+```bash
+planetd tx blog send-ibc-post blog channel-0 "Hello" "Hello Mars, I'm Alice from Earth" --from alice --chain-id earth --home ~/.earth
+```
+
+Verify the post has been **created** successfully via RPC query
+
+```bash
+planetd q blog list-post --node tcp://localhost:26659
+
+planetd q blog list-sent-post
+```
+
+Update the above post, with post ID, title and content
+
+```bash
+planetd tx blog send-ibc-update-post blog channel-0 "0" "How are you" "Hello Mars, This is Alice from Earth" --from alice --chain-id earth --home ~/.earth
+```
+
+Verify the post's title and content have been **updated** successfully via RPC query
 
 ```bash
 planetd q blog list-post --node tcp://localhost:26659
