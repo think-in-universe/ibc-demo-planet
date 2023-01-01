@@ -86,7 +86,10 @@ func (k Keeper) OnRecvIbcUpdatePostPacket(ctx sdk.Context, packet channeltypes.P
 	)
 	if !found {
 		return packetAck, errors.New("post ID not found")
-	} else if post.Creator != data.Editor {
+	}
+
+	editor := packet.SourcePort + "-" + packet.SourceChannel + "-" + data.Editor
+	if post.Creator != editor {
 		return packetAck, errors.New("only the original author could update the post")
 	}
 

@@ -146,7 +146,6 @@ go build
 
 ```bash
 ignite chain serve -c earth.yml
-
 ignite chain serve -c mars.yml
 ```
 
@@ -202,20 +201,18 @@ Verify the post has been **created** successfully via RPC query
 
 ```bash
 planetd q blog list-post --node tcp://localhost:26659
-
 planetd q blog list-sent-post
 ```
 
 Update the above post, with post ID, title and content
 
 ```bash
-planetd tx blog send-ibc-update-post blog channel-0 "0" "How are you" "Hello Mars, This is Alice from Earth" --from alice --chain-id earth --home ~/.earth
+planetd tx blog send-ibc-update-post blog channel-0 0 "How are you" "Hello Mars, This is Alice from Earth" --from alice --chain-id earth --home ~/.earth
 ```
 
 Verify the post's title and content have been **updated** successfully via RPC query
 
 ```bash
 planetd q blog list-post --node tcp://localhost:26659
-
 planetd q blog list-sent-post
 ```
