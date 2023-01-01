@@ -86,7 +86,7 @@ In `x/blog/keeper/msg_server_ibc_update_post.go`, set `Editor` with `msg.Creator
     )
 ```
 
-Please notice that to make it easier to find the sent post, we also modified `keeper/ibc_post.go`, to set the ID of the appended sent post with `PostID`
+To make it easier to find the sent post, we also modified `keeper/ibc_post.go`, by setting the ID of the appended sent post with `PostID`
 
 ```go
     id, err := strconv.ParseUint(packetAck.PostID, 10, 64)
