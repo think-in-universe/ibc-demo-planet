@@ -29,31 +29,42 @@ In `x/blog/keeper/msg_server_ibc_update_post.go`, set `Editor` with `msg.Creator
 
 #### 3. Modify `OnRecvIbcUpdatePostPacket ` in `keeper/ibc_update_post.go`
 
+If the post exists and the update post request is sent by the post author, update title and content, and return `Ok` with `true` in ack.
+
 ```go
-    id, err := strconv.ParseUint(data.PostID, 10, 64)
-    if err != nil {
-        return packetAck, errors.New("invalid post ID")
-    }
+	// Set Ok to false by default, assuming errors would happen
+	packetAck.Ok = false
 
-    post, found := k.GetPost(
-        ctx,
-        id,
-    )
-    if !found {
-        return packetAck, errors.New("post ID not found")
-    } else if post.Creator != data.Editor {
-        return packetAck, errors.New("only the original author could update the post")
-    }
+	id, err := strconv.ParseUint(data.PostID, 10, 64)
+	if err != nil {
+		return packetAck, errors.New("invalid post ID")
+	}
 
-    // update title and content of the updated post
-    post.Title = data.Title
-    post.Content = data.Content
-    k.SetPost(
-        ctx,
-        post,
-    )
+	// Check whether post exists
+	post, found := k.GetPost(
+		ctx,
+		id,
+	)
+	if !found {
+		return packetAck, errors.New("post ID not found")
+	}
 
-    packetAck.Ok = true
+	// Permission control, only author could update post
+	editor := packet.SourcePort + "-" + packet.SourceChannel + "-" + data.Editor
+	if post.Creator != editor {
+		return packetAck, errors.New("only the original author could update the post")
+	}
+
+	// Update title and content of the updated post
+	post.Title = data.Title
+	post.Content = data.Content
+	k.SetPost(
+		ctx,
+		post,
+	)
+
+	// Set Ok to true if no errors
+	packetAck.Ok = true
 ```
 
 #### 4. Modify `OnAcknowledgementIbcUpdatePostPacket ` in `keeper/ibc_update_post.go`

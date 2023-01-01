@@ -75,11 +75,15 @@ func (k Keeper) OnRecvIbcUpdatePostPacket(ctx sdk.Context, packet channeltypes.P
 		return packetAck, err
 	}
 
+	// Set Ok to false by default, assuming errors would happen
+	packetAck.Ok = false
+
 	id, err := strconv.ParseUint(data.PostID, 10, 64)
 	if err != nil {
 		return packetAck, errors.New("invalid post ID")
 	}
 
+	// Check whether post exists
 	post, found := k.GetPost(
 		ctx,
 		id,
@@ -88,12 +92,13 @@ func (k Keeper) OnRecvIbcUpdatePostPacket(ctx sdk.Context, packet channeltypes.P
 		return packetAck, errors.New("post ID not found")
 	}
 
+	// Permission control, only author could update post
 	editor := packet.SourcePort + "-" + packet.SourceChannel + "-" + data.Editor
 	if post.Creator != editor {
 		return packetAck, errors.New("only the original author could update the post")
 	}
 
-	// update title and content of the updated post
+	// Update title and content of the updated post
 	post.Title = data.Title
 	post.Content = data.Content
 	k.SetPost(
@@ -101,6 +106,7 @@ func (k Keeper) OnRecvIbcUpdatePostPacket(ctx sdk.Context, packet channeltypes.P
 		post,
 	)
 
+	// Set Ok to true if no errors
 	packetAck.Ok = true
 
 	return packetAck, nil
