@@ -3,9 +3,10 @@ package keeper
 import (
 	"encoding/binary"
 
+	"planet/x/blog/types"
+
 	"github.com/cosmos/cosmos-sdk/store/prefix"
 	sdk "github.com/cosmos/cosmos-sdk/types"
-	"planet/x/blog/types"
 )
 
 // GetSentPostCount get the total number of sentPost
@@ -40,8 +41,10 @@ func (k Keeper) AppendSentPost(
 	// Create the sentPost
 	count := k.GetSentPostCount(ctx)
 
-	// Set the ID of the appended value
-	sentPost.Id = count
+	// If ID not set, set with count by default
+	if sentPost.Id == 0 {
+		sentPost.Id = count
+	}
 
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SentPostKey))
 	appendedValue := k.cdc.MustMarshal(&sentPost)
@@ -62,6 +65,17 @@ func (k Keeper) SetSentPost(ctx sdk.Context, sentPost types.SentPost) {
 
 // GetSentPost returns a sentPost from its id
 func (k Keeper) GetSentPost(ctx sdk.Context, id uint64) (val types.SentPost, found bool) {
+	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SentPostKey))
+	b := store.Get(GetSentPostIDBytes(id))
+	if b == nil {
+		return val, false
+	}
+	k.cdc.MustUnmarshal(b, &val)
+	return val, true
+}
+
+// GetSentPostByPostID returns a sentPost with the Post ID
+func (k Keeper) GetSentPostByPostID(ctx sdk.Context, id uint64) (val types.SentPost, found bool) {
 	store := prefix.NewStore(ctx.KVStore(k.storeKey), types.KeyPrefix(types.SentPostKey))
 	b := store.Get(GetSentPostIDBytes(id))
 	if b == nil {

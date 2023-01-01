@@ -2,13 +2,14 @@ package keeper
 
 import (
 	"errors"
+	"planet/x/blog/types"
+	"strconv"
+
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
 	clienttypes "github.com/cosmos/ibc-go/v5/modules/core/02-client/types"
 	channeltypes "github.com/cosmos/ibc-go/v5/modules/core/04-channel/types"
 	host "github.com/cosmos/ibc-go/v5/modules/core/24-host"
-	"planet/x/blog/types"
-	"strconv"
 )
 
 // TransmitIbcPostPacket transmits the packet over IBC with the specified source port and source channel
@@ -106,9 +107,15 @@ func (k Keeper) OnAcknowledgementIbcPostPacket(ctx sdk.Context, packet channelty
 			return errors.New("cannot unmarshal acknowledgment")
 		}
 
+		id, err := strconv.ParseUint(packetAck.PostID, 10, 64)
+		if err != nil {
+			return errors.New("invalid post ID")
+		}
+
 		k.AppendSentPost(
 			ctx,
 			types.SentPost{
+				Id:      id,
 				Creator: data.Creator,
 				PostID:  packetAck.PostID,
 				Title:   data.Title,

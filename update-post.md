@@ -4,7 +4,7 @@
 #### 1. Add IBC Update Post Packet
 
 ```bash
-ignite scaffold packet ibcUpdatePost postID title content --ack postID --module blog
+ignite scaffold packet ibcUpdatePost postID title content --ack ok --module blog
 ```
 
 #### 2. Add `Editor` field to `IbcUpdatePostPacketData`
@@ -27,13 +27,86 @@ In `x/blog/keeper/msg_server_ibc_update_post.go`, set `Editor` with `msg.Creator
 	packet.Editor = msg.Creator
 ```
 
-#### 3. Modify `OnRecvIbcUpdatePostPacket ` in keeper
+#### 3. Modify `OnRecvIbcUpdatePostPacket ` in `keeper/ibc_update_post.go`
 
+```go
+    id, err := strconv.ParseUint(data.PostID, 10, 64)
+    if err != nil {
+        return packetAck, errors.New("invalid post ID")
+    }
 
-#### 4. Modify `OnAcknowledgementIbcUpdatePostPacket ` in keeper
+    post, found := k.GetPost(
+        ctx,
+        id,
+    )
+    if !found {
+        return packetAck, errors.New("post ID not found")
+    } else if post.Creator != data.Editor {
+        return packetAck, errors.New("only the original author could update the post")
+    }
 
+    // update title and content of the updated post
+    post.Title = data.Title
+    post.Content = data.Content
+    k.SetPost(
+        ctx,
+        post,
+    )
 
-#### 5. Modify `OnTimeoutIbcUpdatePostPacket ` in keeper
+    packetAck.Ok = true
+```
+
+#### 4. Modify `OnAcknowledgementIbcUpdatePostPacket ` in `keeper/ibc_update_post.go`
+
+```go
+    if !packetAck.Ok {
+        return errors.New("update post failed. No need to update sent post")
+    }
+
+    id, err := strconv.ParseUint(data.PostID, 10, 64)
+    if err != nil {
+        return errors.New("invalid post ID")
+    }
+
+    sentPost, found := k.GetSentPost(
+        ctx,
+        id,
+    )
+    if !found {
+        return errors.New("sent post not found")
+    } else if sentPost.Creator != data.Editor {
+        return errors.New("only the original author could update the sent post")
+    }
+
+    // update title of sent post
+    sentPost.Title = data.Title
+    k.SetSentPost(
+        ctx,
+        sentPost,
+    )
+```
+
+Please notice that to make it easier to find the sent post, we also modified `keeper/ibc_post.go`, to set the ID of the appended sent post with `PostID`
+
+```go
+    id, err := strconv.ParseUint(packetAck.PostID, 10, 64)
+    if err != nil {
+        return errors.New("invalid post ID")
+    }
+
+    k.AppendSentPost(
+        ctx,
+        types.SentPost{
+            Id:      id,
+            Creator: data.Creator,
+            PostID:  packetAck.PostID,
+            Title:   data.Title,
+            Chain:   packet.DestinationPort + "-" + packet.DestinationChannel,
+        },
+    )
+```
+
+#### 5. Modify `OnTimeoutIbcUpdatePostPacket ` in `keeper/ibc_update_post.go`
 
 
 #### 6. Launch two chains

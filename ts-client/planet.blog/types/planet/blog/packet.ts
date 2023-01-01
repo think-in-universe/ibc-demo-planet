@@ -40,7 +40,7 @@ export interface IbcUpdatePostPacketData {
 
 /** IbcUpdatePostPacketAck defines a struct for the packet acknowledgment */
 export interface IbcUpdatePostPacketAck {
-  postID: string;
+  ok: boolean;
 }
 
 function createBaseBlogPacketData(): BlogPacketData {
@@ -351,13 +351,13 @@ export const IbcUpdatePostPacketData = {
 };
 
 function createBaseIbcUpdatePostPacketAck(): IbcUpdatePostPacketAck {
-  return { postID: "" };
+  return { ok: false };
 }
 
 export const IbcUpdatePostPacketAck = {
   encode(message: IbcUpdatePostPacketAck, writer: _m0.Writer = _m0.Writer.create()): _m0.Writer {
-    if (message.postID !== "") {
-      writer.uint32(10).string(message.postID);
+    if (message.ok === true) {
+      writer.uint32(8).bool(message.ok);
     }
     return writer;
   },
@@ -370,7 +370,7 @@ export const IbcUpdatePostPacketAck = {
       const tag = reader.uint32();
       switch (tag >>> 3) {
         case 1:
-          message.postID = reader.string();
+          message.ok = reader.bool();
           break;
         default:
           reader.skipType(tag & 7);
@@ -381,18 +381,18 @@ export const IbcUpdatePostPacketAck = {
   },
 
   fromJSON(object: any): IbcUpdatePostPacketAck {
-    return { postID: isSet(object.postID) ? String(object.postID) : "" };
+    return { ok: isSet(object.ok) ? Boolean(object.ok) : false };
   },
 
   toJSON(message: IbcUpdatePostPacketAck): unknown {
     const obj: any = {};
-    message.postID !== undefined && (obj.postID = message.postID);
+    message.ok !== undefined && (obj.ok = message.ok);
     return obj;
   },
 
   fromPartial<I extends Exact<DeepPartial<IbcUpdatePostPacketAck>, I>>(object: I): IbcUpdatePostPacketAck {
     const message = createBaseIbcUpdatePostPacketAck();
-    message.postID = object.postID ?? "";
+    message.ok = object.ok ?? false;
     return message;
   },
 };

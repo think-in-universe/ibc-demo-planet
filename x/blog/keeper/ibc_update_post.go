@@ -2,6 +2,7 @@ package keeper
 
 import (
 	"errors"
+	"strconv"
 
 	"planet/x/blog/types"
 
@@ -74,7 +75,30 @@ func (k Keeper) OnRecvIbcUpdatePostPacket(ctx sdk.Context, packet channeltypes.P
 		return packetAck, err
 	}
 
-	// TODO: packet reception logic
+	id, err := strconv.ParseUint(data.PostID, 10, 64)
+	if err != nil {
+		return packetAck, errors.New("invalid post ID")
+	}
+
+	post, found := k.GetPost(
+		ctx,
+		id,
+	)
+	if !found {
+		return packetAck, errors.New("post ID not found")
+	} else if post.Creator != data.Editor {
+		return packetAck, errors.New("only the original author could update the post")
+	}
+
+	// update title and content of the updated post
+	post.Title = data.Title
+	post.Content = data.Content
+	k.SetPost(
+		ctx,
+		post,
+	)
+
+	packetAck.Ok = true
 
 	return packetAck, nil
 }
@@ -98,7 +122,31 @@ func (k Keeper) OnAcknowledgementIbcUpdatePostPacket(ctx sdk.Context, packet cha
 			return errors.New("cannot unmarshal acknowledgment")
 		}
 
-		// TODO: successful acknowledgement logic
+		if !packetAck.Ok {
+			return errors.New("update post failed. No need to update sent post")
+		}
+
+		id, err := strconv.ParseUint(data.PostID, 10, 64)
+		if err != nil {
+			return errors.New("invalid post ID")
+		}
+
+		sentPost, found := k.GetSentPost(
+			ctx,
+			id,
+		)
+		if !found {
+			return errors.New("sent post not found")
+		} else if sentPost.Creator != data.Editor {
+			return errors.New("only the original author could update the sent post")
+		}
+
+		// update title of sent post
+		sentPost.Title = data.Title
+		k.SetSentPost(
+			ctx,
+			sentPost,
+		)
 
 		return nil
 	default:

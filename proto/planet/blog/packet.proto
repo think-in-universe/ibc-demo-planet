@@ -26,7 +26,7 @@ message IbcPostPacketData {
 
 // IbcPostPacketAck defines a struct for the packet acknowledgment
 message IbcPostPacketAck {
-	  string postID = 1;
+	string postID = 1;
 }
 // IbcUpdatePostPacketData defines a struct for the packet payload
 message IbcUpdatePostPacketData {
@@ -38,6 +38,6 @@ message IbcUpdatePostPacketData {
 
 // IbcUpdatePostPacketAck defines a struct for the packet acknowledgment
 message IbcUpdatePostPacketAck {
-	  string postID = 1;
+	bool ok = 1;
 }
 // this line is used by starport scaffolding # ibc/packet/proto/message
