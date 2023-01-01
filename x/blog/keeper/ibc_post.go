@@ -139,6 +139,7 @@ func (k Keeper) OnTimeoutIbcPostPacket(ctx sdk.Context, packet channeltypes.Pack
 			Creator: data.Creator,
 			Title:   data.Title,
 			Chain:   packet.DestinationPort + "-" + packet.DestinationChannel,
+			New:     true,
 		},
 	)
 

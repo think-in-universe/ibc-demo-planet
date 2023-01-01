@@ -108,6 +108,32 @@ Please notice that to make it easier to find the sent post, we also modified `ke
 
 #### 5. Modify `OnTimeoutIbcUpdatePostPacket ` in `keeper/ibc_update_post.go`
 
+Append timedout post record if timeout happens.
+
+```go
+	k.AppendTimedoutPost(
+		ctx,
+		types.TimedoutPost{
+			Creator: data.Editor,
+			Title:   data.Title,
+			Chain:   packet.DestinationPort + "-" + packet.DestinationChannel,
+			New:     false,
+		},
+	)
+```
+
+We modified `TimedoutPost` in `blog/timedout_post.proto` by adding a `new` field to differentiate new post and updated post.
+
+```diff
+message TimedoutPost {
+  uint64 id = 1;
+  string title = 2; 
+  string chain = 3; 
+  string creator = 4; 
+-
++ bool new = 5;
+}
+```
 
 #### 6. Launch two chains
 
