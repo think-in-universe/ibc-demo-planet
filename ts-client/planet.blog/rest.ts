@@ -11,6 +11,8 @@
 
 export type BlogMsgSendIbcPostResponse = object;
 
+export type BlogMsgSendIbcUpdatePostResponse = object;
+
 /**
  * Params defines the parameters for the module.
  */
@@ -104,6 +106,7 @@ export interface BlogTimedoutPost {
   title?: string;
   chain?: string;
   creator?: string;
+  existingPostID?: string;
 }
 
 export interface ProtobufAny {

@@ -2,8 +2,9 @@ package keeper
 
 import (
 	"errors"
-	"planet/x/blog/types"
 	"strconv"
+
+	"planet/x/blog/types"
 
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -12,10 +13,10 @@ import (
 	host "github.com/cosmos/ibc-go/v5/modules/core/24-host"
 )
 
-// TransmitIbcPostPacket transmits the packet over IBC with the specified source port and source channel
-func (k Keeper) TransmitIbcPostPacket(
+// TransmitIbcUpdatePostPacket transmits the packet over IBC with the specified source port and source channel
+func (k Keeper) TransmitIbcUpdatePostPacket(
 	ctx sdk.Context,
-	packetData types.IbcPostPacketData,
+	packetData types.IbcUpdatePostPacketData,
 	sourcePort,
 	sourceChannel string,
 	timeoutHeight clienttypes.Height,
@@ -67,30 +68,53 @@ func (k Keeper) TransmitIbcPostPacket(
 	return nil
 }
 
-// OnRecvIbcPostPacket processes packet reception
-func (k Keeper) OnRecvIbcPostPacket(ctx sdk.Context, packet channeltypes.Packet, data types.IbcPostPacketData) (packetAck types.IbcPostPacketAck, err error) {
+// OnRecvIbcUpdatePostPacket processes packet reception
+func (k Keeper) OnRecvIbcUpdatePostPacket(ctx sdk.Context, packet channeltypes.Packet, data types.IbcUpdatePostPacketData) (packetAck types.IbcUpdatePostPacketAck, err error) {
 	// validate packet data upon receiving
 	if err := data.ValidateBasic(); err != nil {
 		return packetAck, err
 	}
 
-	id := k.AppendPost(
+	// Set Ok to false by default, assuming errors would happen
+	packetAck.Ok = false
+
+	id, err := strconv.ParseUint(data.PostID, 10, 64)
+	if err != nil {
+		return packetAck, errors.New("invalid post ID")
+	}
+
+	// Check whether post exists
+	post, found := k.GetPost(
 		ctx,
-		types.Post{
-			Creator: packet.SourcePort + "-" + packet.SourceChannel + "-" + data.Creator,
-			Title:   data.Title,
-			Content: data.Content,
-		},
+		id,
+	)
+	if !found {
+		return packetAck, errors.New("post ID not found")
+	}
+
+	// Permission control, only author could update post
+	editor := packet.SourcePort + "-" + packet.SourceChannel + "-" + data.Editor
+	if post.Creator != editor {
+		return packetAck, errors.New("only the original author could update the post")
+	}
+
+	// Update title and content of the updated post
+	post.Title = data.Title
+	post.Content = data.Content
+	k.SetPost(
+		ctx,
+		post,
 	)
 
-	packetAck.PostID = strconv.FormatUint(id, 10)
+	// Set Ok to true if no errors
+	packetAck.Ok = true
 
 	return packetAck, nil
 }
 
-// OnAcknowledgementIbcPostPacket responds to the the success or failure of a packet
+// OnAcknowledgementIbcUpdatePostPacket responds to the the success or failure of a packet
 // acknowledgement written on the receiving chain.
-func (k Keeper) OnAcknowledgementIbcPostPacket(ctx sdk.Context, packet channeltypes.Packet, data types.IbcPostPacketData, ack channeltypes.Acknowledgement) error {
+func (k Keeper) OnAcknowledgementIbcUpdatePostPacket(ctx sdk.Context, packet channeltypes.Packet, data types.IbcUpdatePostPacketData, ack channeltypes.Acknowledgement) error {
 	switch dispatchedAck := ack.Response.(type) {
 	case *channeltypes.Acknowledgement_Error:
 
@@ -100,27 +124,37 @@ func (k Keeper) OnAcknowledgementIbcPostPacket(ctx sdk.Context, packet channelty
 		return nil
 	case *channeltypes.Acknowledgement_Result:
 		// Decode the packet acknowledgment
-		var packetAck types.IbcPostPacketAck
+		var packetAck types.IbcUpdatePostPacketAck
 
 		if err := types.ModuleCdc.UnmarshalJSON(dispatchedAck.Result, &packetAck); err != nil {
 			// The counter-party module doesn't implement the correct acknowledgment format
 			return errors.New("cannot unmarshal acknowledgment")
 		}
 
-		id, err := strconv.ParseUint(packetAck.PostID, 10, 64)
+		if !packetAck.Ok {
+			return errors.New("update post failed. No need to update sent post")
+		}
+
+		id, err := strconv.ParseUint(data.PostID, 10, 64)
 		if err != nil {
 			return errors.New("invalid post ID")
 		}
 
-		k.AppendSentPost(
+		sentPost, found := k.GetSentPost(
 			ctx,
-			types.SentPost{
-				Id:      id,
-				Creator: data.Creator,
-				PostID:  packetAck.PostID,
-				Title:   data.Title,
-				Chain:   packet.DestinationPort + "-" + packet.DestinationChannel,
-			},
+			id,
+		)
+		if !found {
+			return errors.New("sent post not found")
+		} else if sentPost.Creator != data.Editor {
+			return errors.New("only the original author could update the sent post")
+		}
+
+		// update title of sent post
+		sentPost.Title = data.Title
+		k.SetSentPost(
+			ctx,
+			sentPost,
 		)
 
 		return nil
@@ -130,16 +164,16 @@ func (k Keeper) OnAcknowledgementIbcPostPacket(ctx sdk.Context, packet channelty
 	}
 }
 
-// OnTimeoutIbcPostPacket responds to the case where a packet has not been transmitted because of a timeout
-func (k Keeper) OnTimeoutIbcPostPacket(ctx sdk.Context, packet channeltypes.Packet, data types.IbcPostPacketData) error {
+// OnTimeoutIbcUpdatePostPacket responds to the case where a packet has not been transmitted because of a timeout
+func (k Keeper) OnTimeoutIbcUpdatePostPacket(ctx sdk.Context, packet channeltypes.Packet, data types.IbcUpdatePostPacketData) error {
 
 	k.AppendTimedoutPost(
 		ctx,
 		types.TimedoutPost{
-			Creator:        data.Creator,
+			Creator:        data.Editor,
 			Title:          data.Title,
 			Chain:          packet.DestinationPort + "-" + packet.DestinationChannel,
-			ExistingPostID: "",
+			ExistingPostID: data.PostID,
 		},
 	)
 
