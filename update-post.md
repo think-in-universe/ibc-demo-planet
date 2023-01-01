@@ -1,5 +1,6 @@
 ## Update Post via IBC
 
+This docs describes how to update post via IBC by adding `IbcUpdatePost` packet and callbacks.
 
 #### 1. Add IBC Update Post Packet
 
@@ -69,6 +70,8 @@ If the post exists and the update post request is sent by the post author, updat
 
 #### 4. Modify `OnAcknowledgementIbcUpdatePostPacket ` in `keeper/ibc_update_post.go`
 
+If a `SentPost` with the same ID and creator is found, update the title.
+
 ```go
     if !packetAck.Ok {
         return errors.New("update post failed. No need to update sent post")
@@ -97,18 +100,32 @@ If the post exists and the update post request is sent by the post author, updat
     )
 ```
 
-To make it easier to find the sent post, we also modified `keeper/ibc_post.go`, by setting the ID of the appended sent post with `PostID`
+However, `keeper/sent_post.go` didn't provide a way to find `SentPost` by the `PostID`, because the `ID` of `SentPost` may not be the same as `PostID`.
+To make it easier to find the sent post, we also modified `keeper/sent_post.go` and `keeper/ibc_post.go`, by setting the ID of the appended `SentPost` with `PostID`.
 
-```go
-    id, err := strconv.ParseUint(packetAck.PostID, 10, 64)
-    if err != nil {
-        return errors.New("invalid post ID")
-    }
+In `keeper/sent_post.go`, use the predefined ID if set.
 
+```diff
+-	// Set the ID of the appended value
+-	sentPost.Id = count
++	// If ID not set, set with count by default
++	if sentPost.Id == 0 {
++		sentPost.Id = count
++	}
+```
+
+In `keeper/ibc_post.go`, set the `PostID` as ID
+
+```diff
++   id, err := strconv.ParseUint(packetAck.PostID, 10, 64)
++   if err != nil {
++       return errors.New("invalid post ID")
++   }
++
     k.AppendSentPost(
         ctx,
         types.SentPost{
-            Id:      id,
++           Id:      id,
             Creator: data.Creator,
             PostID:  packetAck.PostID,
             Title:   data.Title,
@@ -119,7 +136,7 @@ To make it easier to find the sent post, we also modified `keeper/ibc_post.go`, 
 
 #### 5. Modify `OnTimeoutIbcUpdatePostPacket ` in `keeper/ibc_update_post.go`
 
-Append timedout post record if timeout happens.
+Append `TimedoutPost` record if timeout happens.
 
 ```go
 	k.AppendTimedoutPost(
@@ -133,7 +150,7 @@ Append timedout post record if timeout happens.
 	)
 ```
 
-We modified `TimedoutPost` in `blog/timedout_post.proto` by adding an `existingPostID` field to differentiate new post and updated post. `existingPostID` is empty if we're creating a new post, and should be the target post when updating post. 
+We modified `TimedoutPost` in `blog/timedout_post.proto` by adding an `existingPostID` field to differentiate new post and updated post. `existingPostID` is empty if we're creating a new post, and will be the target post ID when updating post.
 
 ```diff
 message TimedoutPost {
@@ -153,14 +170,16 @@ cd cmd/planetd
 go build
 ```
 
-#### 7. Launch two chains
+#### 7. Start `earth` and `mars` chains
 
 ```bash
+# clean up chain data before running the test
+rm -rf ~/.earth ~/.mars
 ignite chain serve -c earth.yml
 ignite chain serve -c mars.yml
 ```
 
-#### 8. Start relayer
+#### 8. Start one relayer between `earth` and `mars`
 
 ```bash
 rm -rf ~/.ignite/relayer
@@ -184,7 +203,7 @@ ignite relayer configure -a \
 ignite relayer connect
 ```
 
-You will see the channel ID (e.g. `channel-0`) in the output which will be used in the next step.
+You will find the channel ID (e.g. `channel-0`) in the output which will be used in the next step.
 
 ```bash
 ------
@@ -206,11 +225,8 @@ Create one post with title and content
 
 ```bash
 planetd tx blog send-ibc-post blog channel-0 "Hello" "Hello Mars, I'm Alice from Earth" --from alice --chain-id earth --home ~/.earth
-```
 
-Verify the post has been **created** successfully via RPC query
-
-```bash
+# Via RPC query, verify the post has been created successfully
 planetd q blog list-post --node tcp://localhost:26659
 planetd q blog list-sent-post
 ```
@@ -219,11 +235,36 @@ Update the above post, with post ID, title and content
 
 ```bash
 planetd tx blog send-ibc-update-post blog channel-0 0 "How are you" "Hello Mars, This is Alice from Earth" --from alice --chain-id earth --home ~/.earth
-```
 
-Verify the post's title and content have been **updated** successfully via RPC query
-
-```bash
+# Via RPC query, verify the post's title and content have been updated successfully
 planetd q blog list-post --node tcp://localhost:26659
 planetd q blog list-sent-post
+```
+
+For more details about the commands, try run `planetd tx blog`
+
+```bash
+> planetd tx blog
+
+blog transactions subcommands
+
+Usage:
+  planetd tx blog [flags]
+  planetd tx blog [command]
+
+Available Commands:
+  send-ibc-post        Send a ibcPost over IBC
+  send-ibc-update-post Send a ibcUpdatePost over IBC
+
+Flags:
+  -h, --help   help for blog
+
+Global Flags:
+      --chain-id string     The network chain ID (default "planet")
+      --home string         directory for config and data (default "$HOME/.planet")
+      --log_format string   The logging format (json|plain) (default "plain")
+      --log_level string    The logging level (trace|debug|info|warn|error|fatal|panic) (default "info")
+      --trace               print out full stack trace on errors
+
+Use "planetd tx blog [command] --help" for more information about a command.
 ```
