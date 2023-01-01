@@ -9,11 +9,11 @@ export interface TimedoutPost {
   title: string;
   chain: string;
   creator: string;
-  new: boolean;
+  existingPostID: string;
 }
 
 function createBaseTimedoutPost(): TimedoutPost {
-  return { id: 0, title: "", chain: "", creator: "", new: false };
+  return { id: 0, title: "", chain: "", creator: "", existingPostID: "" };
 }
 
 export const TimedoutPost = {
@@ -30,8 +30,8 @@ export const TimedoutPost = {
     if (message.creator !== "") {
       writer.uint32(34).string(message.creator);
     }
-    if (message.new === true) {
-      writer.uint32(40).bool(message.new);
+    if (message.existingPostID !== "") {
+      writer.uint32(42).string(message.existingPostID);
     }
     return writer;
   },
@@ -56,7 +56,7 @@ export const TimedoutPost = {
           message.creator = reader.string();
           break;
         case 5:
-          message.new = reader.bool();
+          message.existingPostID = reader.string();
           break;
         default:
           reader.skipType(tag & 7);
@@ -72,7 +72,7 @@ export const TimedoutPost = {
       title: isSet(object.title) ? String(object.title) : "",
       chain: isSet(object.chain) ? String(object.chain) : "",
       creator: isSet(object.creator) ? String(object.creator) : "",
-      new: isSet(object.new) ? Boolean(object.new) : false,
+      existingPostID: isSet(object.existingPostID) ? String(object.existingPostID) : "",
     };
   },
 
@@ -82,7 +82,7 @@ export const TimedoutPost = {
     message.title !== undefined && (obj.title = message.title);
     message.chain !== undefined && (obj.chain = message.chain);
     message.creator !== undefined && (obj.creator = message.creator);
-    message.new !== undefined && (obj.new = message.new);
+    message.existingPostID !== undefined && (obj.existingPostID = message.existingPostID);
     return obj;
   },
 
@@ -92,7 +92,7 @@ export const TimedoutPost = {
     message.title = object.title ?? "";
     message.chain = object.chain ?? "";
     message.creator = object.creator ?? "";
-    message.new = object.new ?? false;
+    message.existingPostID = object.existingPostID ?? "";
     return message;
   },
 };

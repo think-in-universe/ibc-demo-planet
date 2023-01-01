@@ -136,10 +136,10 @@ func (k Keeper) OnTimeoutIbcPostPacket(ctx sdk.Context, packet channeltypes.Pack
 	k.AppendTimedoutPost(
 		ctx,
 		types.TimedoutPost{
-			Creator: data.Creator,
-			Title:   data.Title,
-			Chain:   packet.DestinationPort + "-" + packet.DestinationChannel,
-			New:     true,
+			Creator:        data.Creator,
+			Title:          data.Title,
+			Chain:          packet.DestinationPort + "-" + packet.DestinationChannel,
+			ExistingPostID: "",
 		},
 	)
 

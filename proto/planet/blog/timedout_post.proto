@@ -8,5 +8,5 @@ message TimedoutPost {
   string title = 2; 
   string chain = 3; 
   string creator = 4; 
-  bool new = 5;
+  string existingPostID = 5;
 }

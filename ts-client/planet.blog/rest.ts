@@ -106,7 +106,7 @@ export interface BlogTimedoutPost {
   title?: string;
   chain?: string;
   creator?: string;
-  new?: boolean;
+  existingPostID?: string;
 }
 
 export interface ProtobufAny {

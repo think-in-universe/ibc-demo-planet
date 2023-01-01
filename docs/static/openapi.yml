@@ -45100,8 +45100,8 @@ paths:
                       type: string
                     creator:
                       type: string
-                    new:
-                      type: boolean
+                    existingPostID:
+                      type: string
               pagination:
                 type: object
                 properties:
@@ -45229,8 +45229,8 @@ paths:
                     type: string
                   creator:
                     type: string
-                  new:
-                    type: boolean
+                  existingPostID:
+                    type: string
         default:
           description: An unexpected error response.
           schema:
@@ -74934,8 +74934,8 @@ definitions:
               type: string
             creator:
               type: string
-            new:
-              type: boolean
+            existingPostID:
+              type: string
       pagination:
         type: object
         properties:
@@ -75009,8 +75009,8 @@ definitions:
             type: string
           creator:
             type: string
-          new:
-            type: boolean
+          existingPostID:
+            type: string
   planet.blog.QueryParamsResponse:
     type: object
     properties:
@@ -75044,5 +75044,5 @@ definitions:
         type: string
       creator:
         type: string
-      new:
-        type: boolean
+      existingPostID:
+        type: string

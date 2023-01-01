@@ -122,7 +122,7 @@ Append timedout post record if timeout happens.
 	)
 ```
 
-We modified `TimedoutPost` in `blog/timedout_post.proto` by adding a `new` field to differentiate new post and updated post.
+We modified `TimedoutPost` in `blog/timedout_post.proto` by adding an `existingPostID` field to differentiate new post and updated post. `existingPostID` is empty if we're creating a new post, and should be the target post when updating post. 
 
 ```diff
 message TimedoutPost {
@@ -131,13 +131,13 @@ message TimedoutPost {
   string chain = 3; 
   string creator = 4; 
 -
-+ bool new = 5;
++ string existingPostID = 5;
 }
 ```
 
 #### 6. Launch two chains
 
-```
+```bash
 ignite chain serve -c earth.yml
 
 ignite chain serve -c mars.yml
@@ -145,7 +145,7 @@ ignite chain serve -c mars.yml
 
 #### 7. Start relayer
 
-```
+```bash
 rm -rf ~/.ignite/relayer
 
 ignite relayer configure -a \
@@ -169,13 +169,13 @@ ignite relayer connect
 
 #### 8. Update Post from Earth
 
-```
+```bash
 planetd tx blog send-ibc-update-post blog channel-0 0 "Hello" "Hello Mars, I'm Alice from Earth" --from alice --chain-id earth --home ~/.earth
 ```
 
 #### 9. Verify result via RPC query
 
-```
+```bash
 planetd q blog list-post --node tcp://localhost:26659
 
 planetd q blog list-sent-post

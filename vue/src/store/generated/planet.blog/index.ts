@@ -332,19 +332,6 @@ export default {
 		},
 		
 		
-		async sendMsgSendIbcPost({ rootGetters }, { value, fee = [], memo = '' }) {
-			try {
-				const client=await initClient(rootGetters)
-				const result = await client.PlanetBlog.tx.sendMsgSendIbcPost({ value, fee: {amount: fee, gas: "200000"}, memo })
-				return result
-			} catch (e) {
-				if (e == MissingWalletError) {
-					throw new Error('TxClient:MsgSendIbcPost:Init Could not initialize signing client. Wallet is required.')
-				}else{
-					throw new Error('TxClient:MsgSendIbcPost:Send Could not broadcast Tx: '+ e.message)
-				}
-			}
-		},
 		async sendMsgSendIbcUpdatePost({ rootGetters }, { value, fee = [], memo = '' }) {
 			try {
 				const client=await initClient(rootGetters)
@@ -358,20 +345,20 @@ export default {
 				}
 			}
 		},
-		
-		async MsgSendIbcPost({ rootGetters }, { value }) {
+		async sendMsgSendIbcPost({ rootGetters }, { value, fee = [], memo = '' }) {
 			try {
-				const client=initClient(rootGetters)
-				const msg = await client.PlanetBlog.tx.msgSendIbcPost({value})
-				return msg
+				const client=await initClient(rootGetters)
+				const result = await client.PlanetBlog.tx.sendMsgSendIbcPost({ value, fee: {amount: fee, gas: "200000"}, memo })
+				return result
 			} catch (e) {
 				if (e == MissingWalletError) {
 					throw new Error('TxClient:MsgSendIbcPost:Init Could not initialize signing client. Wallet is required.')
-				} else{
-					throw new Error('TxClient:MsgSendIbcPost:Create Could not create message: ' + e.message)
+				}else{
+					throw new Error('TxClient:MsgSendIbcPost:Send Could not broadcast Tx: '+ e.message)
 				}
 			}
 		},
+		
 		async MsgSendIbcUpdatePost({ rootGetters }, { value }) {
 			try {
 				const client=initClient(rootGetters)
@@ -382,6 +369,19 @@ export default {
 					throw new Error('TxClient:MsgSendIbcUpdatePost:Init Could not initialize signing client. Wallet is required.')
 				} else{
 					throw new Error('TxClient:MsgSendIbcUpdatePost:Create Could not create message: ' + e.message)
+				}
+			}
+		},
+		async MsgSendIbcPost({ rootGetters }, { value }) {
+			try {
+				const client=initClient(rootGetters)
+				const msg = await client.PlanetBlog.tx.msgSendIbcPost({value})
+				return msg
+			} catch (e) {
+				if (e == MissingWalletError) {
+					throw new Error('TxClient:MsgSendIbcPost:Init Could not initialize signing client. Wallet is required.')
+				} else{
+					throw new Error('TxClient:MsgSendIbcPost:Create Could not create message: ' + e.message)
 				}
 			}
 		},
