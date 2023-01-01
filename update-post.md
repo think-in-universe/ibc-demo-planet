@@ -142,10 +142,10 @@ Append `TimedoutPost` record if timeout happens.
 	k.AppendTimedoutPost(
 		ctx,
 		types.TimedoutPost{
-			Creator: data.Editor,
-			Title:   data.Title,
-			Chain:   packet.DestinationPort + "-" + packet.DestinationChannel,
-			New:     false,
+			Creator:        data.Creator,
+			Title:          data.Title,
+			Chain:          packet.DestinationPort + "-" + packet.DestinationChannel,
+			ExistingPostID: "",
 		},
 	)
 ```
